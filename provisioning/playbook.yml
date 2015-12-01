@@ -48,11 +48,18 @@
       - xfce4-goodies
       - gdm
 
+  - name: restart machine
+    command: shutdown -r now "Ansible updates triggered"
+    async: 0
+    poll: 0
+    ignore_errors: true
+
+  - name: waiting for server to come back
+    local_action: wait_for host={{ inventory_hostname }} state=started
+    sudo: false
+
   - name: Install a firefox
     apt: name=firefox state=latest
-
-  # - name: install intellij idea 15 ultimate
-  #     get_url: url=http://download.jetbrains.com/idea/ideaIC-15.0.1.tar.gz dest=
 
   - name: Install needed dependancies
     action: "{{ ansible_pkg_mgr }} state=present name={{ item }}"

@@ -16,4 +16,4 @@ vagrant plugin install vagrant-vbguest
 ### Still need to do properly:
 * install intelliJ community edition
 * clean up playbook and extract some of the things into different files
-* get the gui to behave a little better
+* get the gui to behave a little better, probably needs a reboot after install of gdm ....?
