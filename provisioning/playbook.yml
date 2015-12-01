@@ -1,0 +1,101 @@
+---
+- hosts: all
+  remote_user: vagrant
+  sudo: yes
+  vars:
+    intellij_pkg_state: installed
+    intellij_tmp: /tmp/ideaIC-{{intellij_version}}.tar.gz
+    intellij_install_dir: /opt/intellij
+    intellij_version: 15.0.1
+    intellij_url: "http://download.jetbrains.com/idea/ideaIC-{{intellij_version}}.tar.gz"
+    intellij_folder_name: "{{result_intellij_folder_name.stdout_lines.0}}"
+
+  tasks:  
+  - name: update apt_get
+    apt: update_cache=yes
+
+  - name: Install add-apt-repostory
+    apt: name=software-properties-common state=latest
+
+  - name: install git
+    apt: name=git state=latest
+
+  - name: Replace git configuration file
+    copy: src='~/.gitconfig' dest={{ ansible_env.HOME }}/.gitconfig
+
+  - name: Add Oracle Java Repository
+    apt_repository: repo='ppa:webupd8team/java'
+
+  - name: Accept Java 8 Licence
+    shell: echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | tee /etc/oracle-java-8-licence-acceptance | /usr/bin/debconf-set-selections
+    args:
+      creates: /etc/oracle-java-8-licence-acceptance
+
+  - name: Install Oracle Java 8
+    apt: name={{item}} state=latest
+    with_items:
+      - oracle-java8-installer
+      - ca-certificates
+      - oracle-java8-set-default
+
+  - name: Install maven
+    apt: name=maven2 state=latest
+
+  - name: install xfce packages
+    apt: name={{item}} state=latest
+    with_items:
+      - xfce4
+      - xfce4-goodies
+      - gdm
+
+  - name: Install a firefox
+    apt: name=firefox state=latest
+
+  # - name: install intellij idea 15 ultimate
+  #     get_url: url=http://download.jetbrains.com/idea/ideaIC-15.0.1.tar.gz dest=
+
+  - name: Install needed dependancies
+    action: "{{ ansible_pkg_mgr }} state=present name={{ item }}"
+    with_items:
+      - tar
+      - unzip
+    tags: ["packages","intellij"]
+
+  - name: Download intellij
+    get_url: url={{intellij_url}} dest={{intellij_tmp}}
+    tags: ["packages","intellij"]
+
+  - name: Ensure installation directory
+    file:
+      state=directory
+      mode=0755
+      dest={{intellij_install_dir}}
+    tags: ["packages","intellij"]
+
+  - name: Unarchive intellij
+    unarchive:
+      copy=no
+      src={{intellij_tmp}}
+      dest={{intellij_install_dir}}
+    tags: ["packages","intellij"]
+
+  - name: Retreive intellij dir name
+    command: ls -t {{intellij_install_dir}}
+    register: result_intellij_folder_name
+    tags: ["configuration","intellij"]
+
+  - name: Ensure intellij is configured
+    template: src=idea.properties.j2 dest={{intellij_install_dir}}/{{intellij_folder_name}}/bin/idea.properties
+    tags: ["configuration","intellij"]
+
+  - name: Ensure intellij bin exist
+    template: src=intellij.j2 dest=/usr/bin/intellij mode=755
+    tags: ["configuration","intellij"]
+
+  - name: Ensure intellij shortcut is present
+    template: src=intellij.desktop.j2 dest=/usr/share/applications/intellij.desktop
+    tags: ["configuration","intellij"]
+
+
+
+
